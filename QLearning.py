@@ -8,7 +8,7 @@ import itertools
 # Neural network for function approximation
 
 class QLearning:
-    def __init__(self, env, task, n_actions, alpha=1, gamma=0.99, epsilon=1, epsilon_decay=0.99):
+    def __init__(self, env, task, n_actions, alpha=0.8, gamma=0.99, epsilon=1, epsilon_decay=0.99):
         self.env = env
         self.task = task
         self.n_in = task.outdim
@@ -17,7 +17,7 @@ class QLearning:
         self.gamma = gamma
         self.epsilon = epsilon
         self.epsilon_decay = epsilon_decay
-        self.epsilon_min = 0.1
+        self.epsilon_min = 0.05
 
         self.lastaction = None
         self.laststate = None
@@ -26,13 +26,10 @@ class QLearning:
 
         # We create a model for each action
         self.models = []
+        env.reset()
         for _ in range(n_actions):
             # model = SGDRegressor(learning_rate="constant", penalty=None)
-            model = MLPRegressor(hidden_layer_sizes=(100))
-            # We need to call partial_fit once to initialize the model
-            # or we get a NotFittedError when trying to make a prediction
-            # This is quite hacky.
-            env.reset()
+            model = MLPRegressor(hidden_layer_sizes=(50,50))
             model.partial_fit([self.task.getObservation()], [0])
             self.models.append(model)
 
@@ -87,9 +84,11 @@ class QLearning:
         self.last_time = t
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
+
         self.num_episode += 1
 
 
+    # Always choose the best action : epsilon = 0
     def do_episode_withoutLearning(self):
         # One itteration of q learning
 

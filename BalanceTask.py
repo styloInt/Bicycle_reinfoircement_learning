@@ -26,6 +26,7 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
         self.lastT = 0
         self.lastd = 0
         self.last_action=0
+        self.last_angle = 0
 
     @property
     def indim(self):
@@ -78,7 +79,7 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
         # "When the agent can balance for 1000 seconds, the task is considered
         # learned."
         if np.abs(self.env.getTilt()) > self.max_tilt:
-            print ("il est tombe")
+            # print ("il est tombe")
             return True
         elapsed_time = self.env.time_step * self.t
         if elapsed_time > self.max_time:
@@ -87,62 +88,82 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
         return False
 
     def getReward(self):
-        # -1 reward for falling over; no reward otherwise.
+        # Decomentez la reward que vous voulez utiliser, et commentez le reste
+        # return self.getReward_angle()
+        return self.getReward_fail()
+
+
+    # reward qui se base sur l'angle d'inclinaison du velo
+    def getReward_angle(self):
+        diff = abs(self.last_angle) - abs(self.env.getTilt())*10
+        return diff
+
+        # print ("angle : ", self.env.getTilt())
+        # if abs(self.env.getTilt()) <= abs(self.last_angle):
+        #     self.last_angle = self.env.getTilt()
+        #     return 1
+        # else:
+        #     self.last_angle = self.env.getTilt()
+        #     return -1
+
+    # -1 reward for falling over; no reward otherwise.
+    def getReward_fail(self):
         if np.abs(self.env.getTilt()) > self.max_tilt:
-            return -1
-        return 0
+            return 0
+        return 0.1
 
 
-class LinearFATileCodingBalanceTask(BalanceTask):
-    theta_bounds = np.array(
-            [-0.5 * np.pi, -1.0, -0.2, 0, 0.2, 1.0, 0.5 * np.pi])
-    thetad_bounds = np.array(
-            [-np.inf, -2.0, 0, 2.0, np.inf])
-    omega_bounds = np.array(
-            [-BalanceTask.max_tilt, -0.15, -0.06, 0, 0.06, 0.15,
-                BalanceTask.max_tilt])
-    omegad_bounds = np.array(
-            [-np.inf, -0.5, -0.25, 0, 0.25, 0.5, np.inf])
-    omegadd_bounds = np.array(
-            [-np.inf, -2.0, 0, 2.0, np.inf])
-    # http://stackoverflow.com/questions/3257619/numpy-interconversion-between-multidimensional-and-linear-indexing
-    nbins_across_dims = [
-            len(theta_bounds) - 1,
-            len(thetad_bounds) - 1,
-            len(omega_bounds) - 1,
-            len(omegad_bounds) - 1,
-            len(omegadd_bounds) - 1]
-    # This array, when dotted with the 5-dim state vector, gives a 'linear'
-    # index between 0 and 3455.
-    magic_array = np.cumprod([1] + nbins_across_dims)[:-1]
 
-
-    @property
-    def outdim(self):
-        # Used when constructing LinearFALearner's.
-        return 3456
-
-    def getBin(self, theta, thetad, omega, omegad, omegadd):
-        bin_indices = [
-                np.digitize([theta], self.theta_bounds)[0] - 1,
-                np.digitize([thetad], self.thetad_bounds)[0] - 1,
-                np.digitize([omega], self.omega_bounds)[0] - 1,
-                np.digitize([omegad], self.omegad_bounds)[0] - 1,
-                np.digitize([omegadd], self.omegadd_bounds)[0] - 1,
-                ]
-        return np.dot(self.magic_array, bin_indices)
-
-    def getBinIndices(self, linear_index):
-        """Given a linear index (integer between 0 and outdim), returns the bin
-        indices for each of the state dimensions.
-
-        """
-        return linear_index / self.magic_array % self.nbins_across_dims
-
-    def getObservation(self):
-        (theta, thetad, omega, omegad, omegadd,
-                xf, yf, xb, yb, psi) = self.env.getSensors()
-        state = one_to_n(self.getBin(theta, thetad, omega, omegad, omegadd),
-                self.outdim)
-
-        return state
+# class LinearFATileCodingBalanceTask(BalanceTask):
+#     theta_bounds = np.array(
+#             [-0.5 * np.pi, -1.0, -0.2, 0, 0.2, 1.0, 0.5 * np.pi])
+#     thetad_bounds = np.array(
+#             [-np.inf, -2.0, 0, 2.0, np.inf])
+#     omega_bounds = np.array(
+#             [-BalanceTask.max_tilt, -0.15, -0.06, 0, 0.06, 0.15,
+#                 BalanceTask.max_tilt])
+#     omegad_bounds = np.array(
+#             [-np.inf, -0.5, -0.25, 0, 0.25, 0.5, np.inf])
+#     omegadd_bounds = np.array(
+#             [-np.inf, -2.0, 0, 2.0, np.inf])
+#     # http://stackoverflow.com/questions/3257619/numpy-interconversion-between-multidimensional-and-linear-indexing
+#     nbins_across_dims = [
+#             len(theta_bounds) - 1,
+#             len(thetad_bounds) - 1,
+#             len(omega_bounds) - 1,
+#             len(omegad_bounds) - 1,
+#             len(omegadd_bounds) - 1]
+#     # This array, when dotted with the 5-dim state vector, gives a 'linear'
+#     # index between 0 and 3455.
+#     magic_array = np.cumprod([1] + nbins_across_dims)[:-1]
+#
+#
+#     @property
+#     def outdim(self):
+#         # Used when constructing LinearFALearner's.
+#         return 3456
+#
+#     def getBin(self, theta, thetad, omega, omegad, omegadd):
+#         bin_indices = [
+#                 np.digitize([theta], self.theta_bounds)[0] - 1,
+#                 np.digitize([thetad], self.thetad_bounds)[0] - 1,
+#                 np.digitize([omega], self.omega_bounds)[0] - 1,
+#                 np.digitize([omegad], self.omegad_bounds)[0] - 1,
+#                 np.digitize([omegadd], self.omegadd_bounds)[0] - 1,
+#                 ]
+#         return np.dot(self.magic_array, bin_indices)
+#
+#     def getBinIndices(self, linear_index):
+#         """Given a linear index (integer between 0 and outdim), returns the bin
+#         indices for each of the state dimensions.
+#
+#         """
+#         return linear_index / self.magic_array % self.nbins_across_dims
+#
+#     def getObservation(self):
+#         (theta, thetad, omega, omegad, omegadd,
+#                 xf, yf, xb, yb, psi) = self.env.getSensors()
+#         state = one_to_n(self.getBin(theta, thetad, omega, omegad, omegadd),
+#                 self.outdim)
+#
+#         return state

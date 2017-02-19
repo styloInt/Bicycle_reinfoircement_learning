@@ -5,8 +5,8 @@ from QLearning import QLearning
 from BalanceTask import BalanceTask
 from BalanceMoveTask import BalanceMoveTask
 
-# task = BalanceTask()
-task = BalanceMoveTask(0,5)
+task = BalanceTask()
+# task = BalanceMoveTask(0,5)
 env = task.env
 
 qlearning = QLearning(env,task, 9)
@@ -31,14 +31,6 @@ for irehearsal in range(7000):
     # Learn.
     # ------
     r = qlearning.do_episode()
-    # perform_cumrewards += [qlearning.last_rewardcumul]
-    #
-    # ax1.cla()
-    # ax1.plot(perform_cumrewards, '.--')
-    # # Wheel trajectories.
-    # update_wheel_trajectories()
-    #
-    # plt.pause(0.001)
 
     if irehearsal % 50 == 0:
         # Perform (no learning).
@@ -54,4 +46,4 @@ for irehearsal in range(7000):
         # Wheel trajectories.
         update_wheel_trajectories()
 
-        plt.pause(0.01)
+        plt.pause(0.001)
