@@ -12,7 +12,7 @@ task = LinearFATileCodingBalanceTask()
 env = task.env
 
 # learning = QLearning(env, task, 9, K_discountFactor=2000, epsilon_min=0.3, gamma=0.99, epsilon_decay=0.985, Sarsa=True)
-learning = Sarsa_lambda(env, task, 9, alpha=0.5, epsilon_min=0.3,epsilon=0.1, gamma=0.8, epsilon_decay=1, lambd=0.9)
+learning = Sarsa_lambda(env, task, 9, alpha=0.5, epsilon_min=0.3,epsilon=0.1, gamma=0.9, epsilon_decay=1, lambd=0.9)
 env.saveWheelContactTrajectories(True)
 plt.ion()
 plt.figure(figsize=(8, 4))
