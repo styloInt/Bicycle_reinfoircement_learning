@@ -13,7 +13,7 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
     pybrain.rl.environments.cartpole.balancetask.BalanceTask.
 
     """
-    max_tilt = np.pi / 6.
+    max_tilt = np.pi / 15.
     nactions = 9
 
     def __init__(self, max_time=1000.0):
@@ -35,13 +35,15 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
     @property
     def outdim(self):
         # return 5
-        return 5+1 # We keep track of the last action
+        return len(self.getObservation())
 
     def reset(self):
         super(BalanceTask, self).reset()
+        self.env.reset()
         self.lastT = 0
         self.lastd = 0
         self.last_action=0
+        self.last_angle = 0
         self.t = 0
 
     def performAction(self, action):
@@ -72,7 +74,14 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
     def getObservation(self):
         (theta, thetad, omega, omegad, omegadd,
          xf, yf, xb, yb, psi) = self.env.getSensors()
+        X = self.env.getSensors()
+        x_2 = np.power(X[2], 2)
+        x_0 = np.power(X[0], 2)
+        res = [1, X[2], X[3], x_2, np.power(X[3], 2), X[2] * X[3], X[0], X[1], x_0, np.power(X[1], 2),
+               X[0] * X[1], X[2] * X[0], X[2] * x_0, x_2 * X[0]]
+
         return list(self.env.getSensors()[0:5]) + [self.last_action]
+        # return res
 
     def isFinished(self):
         # Criterion for ending an episode. From Randlov's paper:
@@ -95,16 +104,15 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
 
     # reward qui se base sur l'angle d'inclinaison du velo
     def getReward_angle(self):
-        diff = abs(self.last_angle) - abs(self.env.getTilt())*10
-        return diff
+        # diff = abs(self.last_angle) - abs(self.env.getTilt())*10
+        # return diff
 
-        # print ("angle : ", self.env.getTilt())
-        # if abs(self.env.getTilt()) <= abs(self.last_angle):
-        #     self.last_angle = self.env.getTilt()
-        #     return 1
-        # else:
-        #     self.last_angle = self.env.getTilt()
-        #     return -1
+        if abs(self.env.getTilt()) <= abs(self.last_angle):
+            self.last_angle = self.env.getTilt()
+            return 5000
+        else:
+            self.last_angle = self.env.getTilt()
+            return -3000
 
     # -1 reward for falling over; no reward otherwise.
     def getReward_fail(self):
@@ -114,56 +122,60 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
 
 
 
-# class LinearFATileCodingBalanceTask(BalanceTask):
-#     theta_bounds = np.array(
-#             [-0.5 * np.pi, -1.0, -0.2, 0, 0.2, 1.0, 0.5 * np.pi])
-#     thetad_bounds = np.array(
-#             [-np.inf, -2.0, 0, 2.0, np.inf])
-#     omega_bounds = np.array(
-#             [-BalanceTask.max_tilt, -0.15, -0.06, 0, 0.06, 0.15,
-#                 BalanceTask.max_tilt])
-#     omegad_bounds = np.array(
-#             [-np.inf, -0.5, -0.25, 0, 0.25, 0.5, np.inf])
-#     omegadd_bounds = np.array(
-#             [-np.inf, -2.0, 0, 2.0, np.inf])
-#     # http://stackoverflow.com/questions/3257619/numpy-interconversion-between-multidimensional-and-linear-indexing
-#     nbins_across_dims = [
-#             len(theta_bounds) - 1,
-#             len(thetad_bounds) - 1,
-#             len(omega_bounds) - 1,
-#             len(omegad_bounds) - 1,
-#             len(omegadd_bounds) - 1]
-#     # This array, when dotted with the 5-dim state vector, gives a 'linear'
-#     # index between 0 and 3455.
-#     magic_array = np.cumprod([1] + nbins_across_dims)[:-1]
-#
-#
-#     @property
-#     def outdim(self):
-#         # Used when constructing LinearFALearner's.
-#         return 3456
-#
-#     def getBin(self, theta, thetad, omega, omegad, omegadd):
-#         bin_indices = [
-#                 np.digitize([theta], self.theta_bounds)[0] - 1,
-#                 np.digitize([thetad], self.thetad_bounds)[0] - 1,
-#                 np.digitize([omega], self.omega_bounds)[0] - 1,
-#                 np.digitize([omegad], self.omegad_bounds)[0] - 1,
-#                 np.digitize([omegadd], self.omegadd_bounds)[0] - 1,
-#                 ]
-#         return np.dot(self.magic_array, bin_indices)
-#
-#     def getBinIndices(self, linear_index):
-#         """Given a linear index (integer between 0 and outdim), returns the bin
-#         indices for each of the state dimensions.
-#
-#         """
-#         return linear_index / self.magic_array % self.nbins_across_dims
-#
-#     def getObservation(self):
-#         (theta, thetad, omega, omegad, omegadd,
-#                 xf, yf, xb, yb, psi) = self.env.getSensors()
-#         state = one_to_n(self.getBin(theta, thetad, omega, omegad, omegadd),
-#                 self.outdim)
-#
-#         return state
+class LinearFATileCodingBalanceTask(BalanceTask):
+    dict = {}
+
+    theta_bounds = np.array(
+            [-0.5 * np.pi, -1.0, -0.2, 0, 0.2, 1.0, 0.5 * np.pi])
+    thetad_bounds = np.array(
+            [-np.inf, -2.0, 0, 2.0, np.inf])
+    omega_bounds = np.array(
+            [-np.pi, -0.15, -0.06, 0, 0.06, 0.15,
+                np.pi])
+    omegad_bounds = np.array(
+            [-np.inf, -0.5, -0.25, 0, 0.25, 0.5, np.inf])
+    omegadd_bounds = np.array(
+            [-np.inf, -2.0, 0, 2.0, np.inf])
+
+
+
+    # http://stackoverflow.com/questions/3257619/numpy-interconversion-between-multidimensional-and-linear-indexing
+    nbins_across_dims = [
+            len(theta_bounds) - 1,
+            len(thetad_bounds) - 1,
+            len(omega_bounds) - 1,
+            len(omegad_bounds) - 1,
+            len(omegadd_bounds) - 1]
+
+    i=0
+    for t in range(nbins_across_dims[0]):
+        for td in range(nbins_across_dims[1]):
+            for o in range(nbins_across_dims[2]):
+                for od in range(nbins_across_dims[3]):
+                    for odd in range(nbins_across_dims[4]):
+                        dict[(t,td,o,od,odd)] = i
+                        i+=1
+
+    def getObservation(self):
+        (theta, thetad, omega, omegad, omegadd,
+                xf, yf, xb, yb, psi) = self.env.getSensors()
+        bin_indices = [
+            self.get_num_interval(theta, self.theta_bounds),
+            self.get_num_interval(thetad, self.thetad_bounds),
+            self.get_num_interval(omega, self.omega_bounds),
+            self.get_num_interval(omegad, self.omegad_bounds),
+            self.get_num_interval(omegadd, self.omegadd_bounds),
+        ]
+
+        num_state = self.dict[tuple(bin_indices)]
+        state = np.zeros((3456))
+        state[num_state] = 1
+        return state
+
+    def get_num_interval(self, value, bound):
+        for i in range(len(bound)-1):
+            if value >= bound[i] and value < bound[i+1]:
+                return i
+        print ("value : ", value)
+        print ("bound : ", bound)
+        # return i

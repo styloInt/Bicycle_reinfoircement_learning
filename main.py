@@ -2,15 +2,17 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from QLearning import QLearning
-from BalanceTask import BalanceTask
-from BalanceMoveTask import BalanceMoveTask
+from Sarsa_lambda import Sarsa_lambda
+from BalanceTask import BalanceTask, LinearFATileCodingBalanceTask
+from BalanceMoveTask import BalanceMoveTask, LinearFATileCodingBalanceMoveTask
+import seaborn
 
-task = BalanceTask()
-# task = BalanceMoveTask(0,5)
+task = LinearFATileCodingBalanceTask()
+# task = LinearFATileCodingBalanceMoveTask(10, 10)
 env = task.env
 
-qlearning = QLearning(env,task, 9)
-
+# learning = QLearning(env, task, 9, K_discountFactor=2000, epsilon_min=0.3, gamma=0.99, epsilon_decay=0.985, Sarsa=True)
+learning = Sarsa_lambda(env, task, 9, alpha=0.5, epsilon_min=0.3,epsilon=0.1, gamma=0.8, epsilon_decay=1, lambd=0.9)
 env.saveWheelContactTrajectories(True)
 plt.ion()
 plt.figure(figsize=(8, 4))
@@ -26,18 +28,18 @@ def update_wheel_trajectories():
 
 
 perform_cumrewards = []
-for irehearsal in range(7000):
+for irehearsal in range(2000000):
 
     # Learn.
     # ------
-    r = qlearning.do_episode()
+    r = learning.do_episode()
 
     if irehearsal % 50 == 0:
         # Perform (no learning).
         # ----------------------
         # Perform.
-        qlearning.do_episode_withoutLearning()
-        perform_cumreward = qlearning.last_rewardcumul
+        learning.do_episode_withoutLearning()
+        perform_cumreward = learning.last_rewardcumul
         perform_cumrewards.append(perform_cumreward)
 
 

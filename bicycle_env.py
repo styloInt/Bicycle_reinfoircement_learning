@@ -199,13 +199,16 @@ class BicycleEnvironment(Environment):
         self.sensors = np.array([theta, thetad, omega, omegad, omegadd,
                                  xf, yf, xb, yb, psi])
 
-        self.xfhist = []
-        self.yfhist = []
-        self.xbhist = []
-        self.ybhist = []
+        self.xfhist = [xf]
+        self.yfhist = [yf]
+        self.xbhist = [xb]
+        self.ybhist = [yb]
 
     def getSteer(self):
         return self.sensors[0]
+
+    def getPsi(self):
+        return self.sensors[9]
 
     def getTilt(self):
         return self.sensors[2]
