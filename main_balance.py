@@ -8,11 +8,15 @@ import itertools
 from BalanceMoveTask import BalanceMoveTask, LinearFATileCodingBalanceMoveTask
 import seaborn
 
+"""
+
+"""
+
 task = LinearFATileCodingBalanceTask()
 env = task.env
 
-learning = QLearning(env, task, 9, alpha=0.5, epsilon_min=0.0,epsilon=1, gamma=0.9, epsilon_decay=0.999, lambd=0.7,Sarsa=True, metrique_reward=0)
-# learning = Sarsa_lambda(env, task, 9, alpha=0.05, epsilon_min=0.0,epsilon=1, gamma=0.9, epsilon_decay=0.999, lambd=0.7, metrique_reward=0)
+# learning = QLearning(env, task, 9, alpha=0.5, epsilon_min=0.0,epsilon=1, gamma=0.9, epsilon_decay=0.999, lambd=0.7,Sarsa=True, metrique_reward=0)
+learning = Sarsa_lambda(env, task, 9, alpha=0.05, epsilon_min=0.0,epsilon=1, gamma=0.9, epsilon_decay=0.999, lambd=0.7, metrique_reward=0)
 env.saveWheelContactTrajectories(True)
 plt.ion()
 # plt.figure(figsize=(8, 4))

@@ -20,7 +20,6 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
         if env==None:
             env = BicycleEnvironment()
         super(BalanceTask, self).__init__(env)
-        self.env = env
         self.max_time = max_time
         # Keep track of time in case we want to end episodes based on number of
         # time steps.
