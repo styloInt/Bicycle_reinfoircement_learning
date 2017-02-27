@@ -8,13 +8,12 @@ import itertools
 from BalanceMoveTask import BalanceMoveTask, LinearFATileCodingBalanceMoveTask
 import seaborn
 
-# task = LinearFATileCodingBalanceTask()
-task = LinearFATileCodingBalanceMoveTask(0, 100)
+# task = BalanceMoveTask(0,10)
+task = LinearFATileCodingBalanceMoveTask(0, 20)
 env = task.env
 
-# learning = QLearning(env, task, 9, alpha=0.5, epsilon_min=0.3, gamma=0.9, epsilon_decay=0.99, lambd=0.7,Sarsa=True)
-# learning = Sarsa_lambda(env, task, 9, alpha=0.05, epsilon_min=0.0,epsilon=1, gamma=0.99, epsilon_decay=0.999, lambd=0.95, metrique_reward=0)
-learning = Sarsa_lambda(env, task, 9, alpha=0.05, epsilon_min=0.3,epsilon=1, gamma=0.9, epsilon_decay=0.99, lambd=0.95, metrique_reward=6)
+# learning = QLearning(env, task, 9, alpha=0.05, epsilon_min=0.0, gamma=0.99, epsilon_decay=0.999, lambd=0.7,Sarsa=True)
+learning = Sarsa_lambda(env, task, 9, alpha=0.05, epsilon_min=0.0,epsilon=1, gamma=0.9, epsilon_decay=0.999, lambd=0.7, metrique_reward=5)
 env.saveWheelContactTrajectories(True)
 plt.ion()
 # plt.figure(figsize=(8, 4))
@@ -35,12 +34,12 @@ def update_wheel_trajectories():
     plt.axis('equal')
 
 params = ["alpha : ", learning.alpha, "K_disconout_factor : ", learning.K_discountFactor, "epsilon_min : ", learning.epsilon_min, "gamma : ", learning.gamma,\
-                                       " epsilon_decay : ", learning.epsilon_decay, "lambda : ", learning.lambd, " metrique : ", learning.metrique_reward]
+                                       " epsilon_decay : ", learning.epsilon_decay, "lambda : ", learning.lambd, " metrique : ", learning.metrique_reward, "dest : ", task.dest]
 print (params)
 perform_cumrewards = []
-number_itterations = []
+distances = []
 episodes = []
-number_episodes = 7000
+number_episodes = 10000
 for irehearsal in itertools.count():
     if learning.num_episode > number_episodes:
         break
@@ -54,17 +53,17 @@ for irehearsal in itertools.count():
         # ----------------------
         # Perform.
         last_cumulrewards = []
-        last_t = []
+        last_distance = []
         for t in range(3):
             learning.do_episode_greedy()
             perform_cumreward = learning.last_rewardcumul
             last_cumulrewards.append(perform_cumreward)
-            last_t.append(learning.last_time)
+            last_distance.append(task.distance)
             update_wheel_trajectories()
         # perform_cumreward = learning.last_time
         # perform_cumrewards.append(perform_cumreward)
         perform_cumrewards.append(np.mean(last_cumulrewards))
-        number_itterations.append(np.mean(last_t))
+        distances.append(np.mean(last_distance))
         episodes.append(learning.num_episode)
 
         ax1.cla()
@@ -76,15 +75,15 @@ for irehearsal in itertools.count():
 
         ax3.cla()
         ax3.set_xlabel("Number of training episodes")
-        ax3.set_ylabel("Number of itterations without falling /10")
+        ax3.set_ylabel("Distance from the goal")
         # ax3.set_xlim(0,10)
-        ax3.plot(episodes, np.array(number_itterations)/10, '--')
+        ax3.plot(episodes, np.array(distances), '--')
         plt.pause(0.001)
 
-fig1.savefig("images_test/reward_"+str(params).replace("[", "").replace(":", "").replace("\n","").replace(" ", "")+".png")
+fig1.savefig("images_test_Move/reward_"+str(params).replace("[", "").replace(":", "").replace("\n","").replace(" ", "")+".png")
 fig2.savefig(
-    "images_test/traject_" + str(params).replace("[", "").replace(":", "").replace("\n", "").replace(" ",
+    "images_test_Move/traject_" + str(params).replace("[", "").replace(":", "").replace("\n", "").replace(" ",
                                                                                                     "") + ".png")
 fig3.savefig(
-    "images_test/itterations_" + str(params).replace("[", "").replace(":", "").replace("\n", "").replace(" ",
+    "images_test_Move/distance_" + str(params).replace("[", "").replace(":", "").replace("\n", "").replace(" ",
                                                                                                     "") + ".png")

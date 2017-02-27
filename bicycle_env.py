@@ -216,7 +216,7 @@ class BicycleEnvironment(Environment):
         yf = self.L
         xb = 0
         yb = 0
-
+        self.t = 0
         psi = np.arctan((xb - xf) / (yf - yb))
         self.sensors = np.array([theta, thetad, omega, omegad, omegadd,
                                  xf, yf, xb, yb, psi])
