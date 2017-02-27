@@ -16,7 +16,7 @@ def softmax(x):
 # Neural network for function approximation
 
 class QLearning:
-    def __init__(self, env, task, n_actions, alpha=None, gamma=0.99, epsilon=1, epsilon_decay=0.99, K_discountFactor=None, epsilon_min=0.05, Sarsa=True, lambd=0.5):
+    def __init__(self, env, task, n_actions, alpha=None, gamma=0.99, epsilon=1, epsilon_decay=0.99, K_discountFactor=None, epsilon_min=0.05, Sarsa=True, lambd=0.5,metrique_reward=0):
         assert (alpha != None and K_discountFactor == None) or (alpha==None and K_discountFactor!=None)
 
         self.env = env
@@ -32,6 +32,7 @@ class QLearning:
         self.K_discountFactor = K_discountFactor
         self.Sarsa=Sarsa
         self.lambd = lambd
+        self.metrique_reward=metrique_reward
 
         self.lastaction = None
         self.laststate = None
@@ -70,7 +71,7 @@ class QLearning:
         return best_action
 
 
-    def do_episode(self):
+    def do_episode(self,epsilon=None):
         # One itteration of q learning
         self.env.reset()
         self.task.reset()
@@ -78,6 +79,11 @@ class QLearning:
         # self.epsilon = self.epsilon_init/float(self.epsilon_init+self.num_episode)
 
         # self.epsilon = self.epsilon_init
+        learning = True
+        if epsilon == None:
+            epsilon = self.epsilon
+        else:
+            learning = False
 
         if self.K_discountFactor:
             self.alpha = self.K_discountFactor /float(self.K_discountFactor+self.num_episode)
@@ -94,8 +100,8 @@ class QLearning:
             self.task.performAction(action)
             new_state = self.task.getObservation()
 
-            reward = self.task.getReward()
-            reward_cumul += self.gamma**t * reward
+            reward = self.task.getReward(self.metrique_reward)
+            reward_cumul += 0.99**t * reward
 
             q_values_next = [self.models[a].predict([self.featurize_state(new_state)])[0] for a in range(self.n_actions)]
 
@@ -105,13 +111,14 @@ class QLearning:
             else:
                 # proba = softmax(q_values_next)
                 # action = np.random.choice(np.arange(len(proba)), p=proba)
-                action = self.epsilon_greedy_policy(state, epsilon=self.epsilon)
+                action = self.epsilon_greedy_policy(new_state, epsilon=epsilon)
                 td_target = reward + self.alpha * q_values_next[action]
 
             # print ("td target : ", td_target, " reward : ", reward)
 
             # We update our models
-            self.models[action].partial_fit([self.featurize_state(state)], [td_target])
+            if learning:
+                self.models[action].partial_fit([self.featurize_state(state)], [td_target])
 
             if self.task.isFinished():
                 break
@@ -124,57 +131,19 @@ class QLearning:
         self.last_rewardcumul = reward_cumul
         self.last_time = t
 
-        if self.epsilon > self.epsilon_min:
+        if self.epsilon > self.epsilon_min and learning:
             self.epsilon *= self.epsilon_decay
 
-        self.num_episode += 1
+        if learning:
+            self.num_episode += 1
 
 
     # Always choose the best action : epsilon = 0
-    def do_episode_withoutLearning(self):
+    def do_episode_greedy(self):
         # One itteration of q learning
-
-        self.env.reset()
-        self.task.reset()
-
-        reward_cumul = 0
-
-        state = self.task.getObservation()
-        if self.Sarsa:
-            action = self.epsilon_greedy_policy(state, epsilon=self.epsilon)
-        for t in itertools.count():
-            if not self.Sarsa:
-                action = self.epsilon_greedy_policy(state, epsilon=0)
-
-            self.task.performAction(action)
-            new_state = self.task.getObservation()
-
-            reward = self.task.getReward()
-            reward_cumul += self.gamma ** t * reward
-
-            q_values_next = [self.models[a].predict([self.featurize_state(new_state)])[0] for a in
-                             range(self.n_actions)]
-
-            if not self.Sarsa:
-                td_target = reward + self.alpha * np.max(q_values_next)
-            else:
-                action = self.epsilon_greedy_policy(state, epsilon=self.epsilon)
-                td_target = reward + self.alpha * q_values_next[action]
-
-
-            # We update our models
-            self.models[action].partial_fit([self.featurize_state(state)], [td_target])
-
-            if self.task.isFinished():
-                break
-
-            state = new_state
-
-        print ("Episode : ", self.num_episode, " , cummul reward ", reward_cumul, "time : ", t, "alpha : ", self.alpha, " epsilon : ", self.epsilon)
-
-        self.last_rewardcumul = reward_cumul
-        self.num_episode += 1
-
+        self.do_episode(epsilon=0.0)
+        print ("Episode : ", self.num_episode, " , cummul reward ", self.last_rewardcumul, "time : ", self.last_time,
+               "alpha : ", self.alpha, " epsilon : ", self.epsilon)
 
     def samples_state(self, n):
 
@@ -195,8 +164,8 @@ class QLearning:
         """
         Returns the featurized representation for a state.
         """
-        # return state
-        scaled = self.scaler.transform(np.array(state).reshape(1,-1))
-        return scaled[0]
+        return state
+        # scaled = self.scaler.transform(np.array(state).reshape(1,-1))
+        # return scaled[0]
 
 

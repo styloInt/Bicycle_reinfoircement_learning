@@ -16,8 +16,11 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
     max_tilt = np.pi / 15.
     nactions = 9
 
-    def __init__(self, max_time=1000.0):
-        super(BalanceTask, self).__init__(BicycleEnvironment())
+    def __init__(self, max_time=1000.0, env=None):
+        if env==None:
+            env = BicycleEnvironment()
+        super(BalanceTask, self).__init__(env)
+        self.env = env
         self.max_time = max_time
         # Keep track of time in case we want to end episodes based on number of
         # time steps.
@@ -96,10 +99,19 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
             return True
         return False
 
-    def getReward(self):
+    def getReward(self, metrique=0):
         # Decomentez la reward que vous voulez utiliser, et commentez le reste
-        # return self.getReward_angle()
-        return self.getReward_fail()
+        if metrique==0:
+            if np.abs(self.env.getTilt()) > self.max_tilt:
+                return -1.
+            return 0
+        elif metrique==1:
+            if np.abs(self.env.getTilt()) > self.max_tilt:
+                return -1.
+            return 0.01
+        elif metrique==2:
+            return self.getReward_angle()
+
 
 
     # reward qui se base sur l'angle d'inclinaison du velo
@@ -112,13 +124,13 @@ class BalanceTask(pybrain.rl.environments.EpisodicTask):
             return 5000
         else:
             self.last_angle = self.env.getTilt()
-            return -3000
+            return 3000
 
     # -1 reward for falling over; no reward otherwise.
     def getReward_fail(self):
         if np.abs(self.env.getTilt()) > self.max_tilt:
-            return 0
-        return 0.1
+            return -10.
+        return 0
 
 
 

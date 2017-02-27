@@ -16,7 +16,7 @@ def softmax(x):
 # Neural network for function approximation
 
 class Sarsa_lambda:
-    def __init__(self, env, task, n_actions, alpha=None, gamma=0.99, epsilon=1, epsilon_decay=0.9, K_discountFactor=None, epsilon_min=0.05, lambd=0.9):
+    def __init__(self, env, task, n_actions, alpha=None, gamma=0.99, epsilon=1, epsilon_decay=0.9, K_discountFactor=None, epsilon_min=0.05, lambd=0.9, metrique_reward=0):
         assert (alpha != None and K_discountFactor == None) or (alpha==None and K_discountFactor!=None)
 
         # self.env = env
@@ -31,6 +31,7 @@ class Sarsa_lambda:
         self.epsilon_init = 1000
         self.K_discountFactor = K_discountFactor
         self.lambd = lambd
+        self.metrique_reward = metrique_reward
 
         self.state_nonvisited = set(range(self.n_in))
 
@@ -86,8 +87,11 @@ class Sarsa_lambda:
         # One itteration of q learning
         self.task.reset()
         self.traces = np.zeros(self.traces.shape)
+        learning = True
         if epsilon == None:
             epsilon=self.epsilon
+        else:
+            learning = False
 
         # self.epsilon = self.epsilon_init/float(self.epsilon_init+self.num_episode)
 
@@ -109,8 +113,8 @@ class Sarsa_lambda:
             self.task.performAction(action)
             new_state = self.task.getObservation()
 
-            reward = self.task.getReward()
-            reward_cumul += self.gamma ** t * reward
+            reward = self.task.getReward(self.metrique_reward)
+            reward_cumul += 0.99**t*reward
 
             num_newState = np.argmax(new_state)
             # try:
@@ -127,14 +131,12 @@ class Sarsa_lambda:
             new_action = self.epsilon_greedy_policy(num_newState, epsilon=epsilon)
 
             # print ("reward : ", reward)
-            delta = reward + self.gamma*self.Q[num_newState, new_action] - self.Q[num_state, action]
-
-            # print ("action : ", action)
-            self.traces[num_state, action] += 1
-
-
-            self.Q += self.alpha*delta*self.traces
-            self.traces *= self.gamma * self.lambd
+            if learning:
+                delta = reward + self.gamma*self.Q[num_newState, new_action] - self.Q[num_state, action]
+                # print ("action : ", action)
+                self.traces[num_state, action] += 1
+                self.Q += self.alpha*delta*self.traces
+                self.traces *= self.gamma * self.lambd
 
             if self.task.isFinished():
                 break
@@ -149,14 +151,15 @@ class Sarsa_lambda:
         self.last_rewardcumul = reward_cumul
         self.last_time = t
 
-        if epsilon != 0.0 and self.epsilon >= self.epsilon_min:
+        if epsilon != 0.0 and self.epsilon >= self.epsilon_min and learning:
             self.epsilon =epsilon*self.epsilon_decay
 
-        self.num_episode += 1
+        if learning:
+            self.num_episode += 1
 
 
     # Always choose the best action : epsilon = 0
-    def do_episode_withoutLearning(self):
+    def do_episode_greedy(self):
         self.do_episode(epsilon=0.0)
         print ("Episode : ", self.num_episode, " , cummul reward ", self.last_rewardcumul, "time : ", self.last_time, "alpha : ", self.alpha, " epsilon : ", self.epsilon)
 

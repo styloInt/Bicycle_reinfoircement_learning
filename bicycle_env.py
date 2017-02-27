@@ -70,6 +70,7 @@ class BicycleEnvironment(Environment):
     Idl = 0.5 * Md * r ** 2
     Itot = 13.0 / 3.0 * Mc * h ** 2 + Mp * (h + dCM) ** 2
     sigmad = v / r
+    t=0
 
     def __init__(self):
         Environment.__init__(self)
@@ -80,6 +81,27 @@ class BicycleEnvironment(Environment):
     def performAction(self, actions):
         self.actions = actions
         self.step()
+
+    def _performAction(self, action):
+        """Incoming action is an int between 0 and 8. The action we provide to
+        the environment consists of a torque T in {-2 N, 0, 2 N}, and a
+        displacement d in {-.02 m, 0, 0.02 m}.
+
+        """
+        self.t += 1
+        assert round(action) == action
+
+        # -1 for action in {0, 1, 2}, 0 for action in {3, 4, 5}, 1 for
+        # action in {6, 7, 8}
+        torque_selector = np.floor(action / 3.0) - 1.0
+        T = 2 * torque_selector
+        # Random number in [-1, 1]:
+        p = 2.0 * np.random.rand() - 1.0
+        # -1 for action in {0, 3, 6}, 0 for action in {1, 4, 7}, 1 for
+        # action in {2, 5, 8}
+        disp_selector = action % 3 - 1.0
+        d = 0.02 * disp_selector + 0.02 * p
+        self.performAction([T, d])
 
     def saveWheelContactTrajectories(self, opt):
         self._save_wheel_contact_trajectories = opt
@@ -221,6 +243,9 @@ class BicycleEnvironment(Environment):
 
     def get_posf(self):
         return (self.xfhist[-1], self.yfhist[-1])
+
+    def get_posb(self):
+        return (self.xbhist[-1], self.ybhist[-1])
 
     def get_xbhist(self):
         return self.xbhist
