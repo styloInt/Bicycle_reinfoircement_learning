@@ -9,7 +9,7 @@ from BalanceMoveTask import BalanceMoveTask, LinearFATileCodingBalanceMoveTask
 import seaborn
 
 """
-
+ In this main, we only learn to balance the bicycle. You can change the parameter if you want
 """
 
 task = LinearFATileCodingBalanceTask()
@@ -19,7 +19,9 @@ env = task.env
 learning = Sarsa_lambda(env, task, 9, alpha=0.05, epsilon_min=0.0,epsilon=1, gamma=0.9, epsilon_decay=0.999, lambd=0.7, metrique_reward=0)
 env.saveWheelContactTrajectories(True)
 plt.ion()
-# plt.figure(figsize=(8, 4))
+
+
+
 
 fig1 = plt.figure()
 ax1 = plt.axes()
@@ -27,9 +29,6 @@ fig2 = plt.figure()
 ax2 = plt.axes()
 fig3 = plt.figure()
 ax3 = fig3.gca()
-# ax1 = fig.add_subplot(2, 2, 1)
-# ax2 = fig.add_subplot(2, 2, 2)
-# ax3 = fig.add_subplot(2, 2, 3)
 
 def update_wheel_trajectories():
     front_lines = ax2.plot(env.get_xfhist(), env.get_yfhist(), 'r')
@@ -83,6 +82,7 @@ for irehearsal in itertools.count():
         ax3.plot(episodes, np.array(number_itterations)/10, '--')
         plt.pause(0.001)
 
+# SAUVEGARDE
 fig1.savefig("images_test/reward_"+str(params).replace("[", "").replace(":", "").replace("\n","").replace(" ", "")+".png")
 fig2.savefig(
     "images_test/traject_" + str(params).replace("[", "").replace(":", "").replace("\n", "").replace(" ",
